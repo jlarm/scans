@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\ScanController;
 use App\Http\Controllers\ScanIndexController;
+use App\Http\Controllers\ScanShowController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -22,6 +23,10 @@ Route::get('scans', [ScanIndexController::class, 'index'])
 Route::get('scans/{scan}/progress', [ScanIndexController::class, 'progress'])
     ->middleware(['auth', 'verified'])
     ->name('scans.progress');
+
+Route::get('scans/{scan}', [ScanShowController::class, 'show'])
+    ->middleware(['auth', 'verified'])
+    ->name('scans.show');
 
 Route::get('scans/create', [ScanController::class, 'create'])
     ->middleware(['auth', 'verified'])

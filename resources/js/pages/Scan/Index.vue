@@ -355,7 +355,9 @@ onUnmounted(() => {
                                 <!-- Actions -->
                                 <TableCell>
                                     <div class="flex space-x-2">
-                                        <Button variant="outline" size="sm">View</Button>
+                                        <Link :href="route('scans.show', scan.id)">
+                                            <Button variant="outline" size="sm">View</Button>
+                                        </Link>
                                         <Button v-if="scan.status === 'completed'" variant="outline" size="sm">Report</Button>
                                     </div>
                                 </TableCell>
