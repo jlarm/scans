@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Contracts\ScannerServiceInterface;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
-final readonly class ScannerService
+final readonly class ScannerService implements ScannerServiceInterface
 {
     private Client $client;
 

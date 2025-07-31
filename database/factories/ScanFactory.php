@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\ScanStatus;
 use App\Models\Company;
 use App\Models\Scan;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
+/**
+ * @extends Factory<Scan>
+ */
 final class ScanFactory extends Factory
 {
     protected $model = Scan::class;
@@ -16,26 +20,102 @@ final class ScanFactory extends Factory
     public function definition(): array
     {
         return [
-            'uuid' => $this->faker->uuid(),
+            'uuid' => Str::uuid(),
             'company_id' => Company::factory(),
-            'name' => $this->faker->words(3, true),
-            'description' => $this->faker->optional()->paragraph(),
-            'agent' => $this->faker->optional()->randomElement(['nmap', 'nessus', 'openvas']),
-            'send_notification' => $this->faker->boolean(30),
-            'notification_email' => $this->faker->optional(0.3)->email(),
-            'schedule_type' => $this->faker->optional()->randomElement(['once', 'daily', 'weekly', 'monthly']),
-            'scheduled_at' => $this->faker->optional()->dateTimeBetween('now', '+1 month'),
-            'cron_expression' => $this->faker->optional()->randomElement(['0 0 * * *', '0 12 * * 0', '0 9 * * 1']),
-            'status' => $this->faker->randomElement(['pending', 'running', 'completed', 'failed']),
-            'risk_grade' => $this->faker->optional()->randomElement(['A', 'B', 'C', 'D', 'F']),
-            'summary' => $this->faker->optional()->randomElement([
-                ['total_vulnerabilities' => $this->faker->numberBetween(0, 100), 'critical' => $this->faker->numberBetween(0, 10)],
-                ['hosts_scanned' => $this->faker->numberBetween(1, 50), 'open_ports' => $this->faker->numberBetween(0, 200)],
-            ]),
-            'started_at' => $this->faker->optional()->dateTimeBetween('-1 week', 'now'),
-            'completed_at' => $this->faker->optional()->dateTimeBetween('-1 week', 'now'),
-            'created_at' => CarbonImmutable::now(),
-            'updated_at' => CarbonImmutable::now(),
+            'name' => fake()->words(3, true),
+            'description' => fake()->sentence(),
+            'urls' => null,
+            'ip_addresses' => null,
+            'send_notification' => false,
+            'notification_email' => null,
+            'schedule_type' => 'immediate',
+            'scheduled_at' => now(),
+            'cron_expression' => null,
+            'frequency' => null,
+            'day_of_week' => null,
+            'schedule_time' => null,
+            'status' => ScanStatus::PENDING->value,
+            'risk_grade' => null,
+            'summary' => null,
+            'started_at' => null,
+            'completed_at' => null,
         ];
+    }
+
+    public function withUrls(array $urls = ['https://example.com']): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'urls' => $urls,
+        ]);
+    }
+
+    public function withIpAddresses(array $ips = ['192.168.1.1']): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'ip_addresses' => $ips,
+        ]);
+    }
+
+    public function once(string $scheduledAt = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'schedule_type' => 'once',
+            'scheduled_at' => $scheduledAt ? $scheduledAt : now()->addHour(),
+        ]);
+    }
+
+    public function recurring(string $cronExpression = '0 9 * * *'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'schedule_type' => 'recurring',
+            'cron_expression' => $cronExpression,
+            'frequency' => 'daily',
+            'schedule_time' => '09:00',
+        ]);
+    }
+
+    public function completed(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => ScanStatus::COMPLETED->value,
+            'started_at' => now()->subHour(),
+            'completed_at' => now()->subMinutes(30),
+            'risk_grade' => 'A',
+            'summary' => [
+                'total_targets' => 1,
+                'total_checks' => 5,
+                'passed_checks' => 5,
+                'failed_checks' => 0,
+            ],
+        ]);
+    }
+
+    public function failed(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => ScanStatus::FAILED->value,
+            'started_at' => now()->subHour(),
+            'completed_at' => now()->subMinutes(30),
+            'summary' => [
+                'error' => 'Scanner service error',
+                'failed_at' => now()->subMinutes(30)->toIso8601String(),
+            ],
+        ]);
+    }
+
+    public function running(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => ScanStatus::RUNNING->value,
+            'started_at' => now()->subMinutes(10),
+        ]);
+    }
+
+    public function withNotification(string $email = 'test@example.com'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'send_notification' => true,
+            'notification_email' => $email,
+        ]);
     }
 }
