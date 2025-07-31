@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\ScanController;
 use App\Http\Controllers\ScanIndexController;
+use App\Http\Controllers\ScanReportController;
 use App\Http\Controllers\ScanShowController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -20,6 +21,10 @@ Route::get('scans', [ScanIndexController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('scans.index');
 
+Route::get('scans/create', [ScanController::class, 'create'])
+    ->middleware(['auth', 'verified'])
+    ->name('scans.create');
+
 Route::get('scans/{scan}/progress', [ScanIndexController::class, 'progress'])
     ->middleware(['auth', 'verified'])
     ->name('scans.progress');
@@ -28,9 +33,9 @@ Route::get('scans/{scan}', [ScanShowController::class, 'show'])
     ->middleware(['auth', 'verified'])
     ->name('scans.show');
 
-Route::get('scans/create', [ScanController::class, 'create'])
+Route::get('scans/{scan}/report.pdf', [ScanReportController::class, 'generatePdf'])
     ->middleware(['auth', 'verified'])
-    ->name('scans.create');
+    ->name('scans.report.pdf');
 
 Route::post('scans', [ScanController::class, 'store'])
     ->middleware(['auth', 'verified'])
