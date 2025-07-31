@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Models\Company;
@@ -7,7 +9,7 @@ use App\Models\Scan;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-class ScanFactory extends Factory
+final class ScanFactory extends Factory
 {
     protected $model = Scan::class;
 
@@ -28,7 +30,7 @@ class ScanFactory extends Factory
             'risk_grade' => $this->faker->optional()->randomElement(['A', 'B', 'C', 'D', 'F']),
             'summary' => $this->faker->optional()->randomElement([
                 ['total_vulnerabilities' => $this->faker->numberBetween(0, 100), 'critical' => $this->faker->numberBetween(0, 10)],
-                ['hosts_scanned' => $this->faker->numberBetween(1, 50), 'open_ports' => $this->faker->numberBetween(0, 200)]
+                ['hosts_scanned' => $this->faker->numberBetween(1, 50), 'open_ports' => $this->faker->numberBetween(0, 200)],
             ]),
             'started_at' => $this->faker->optional()->dateTimeBetween('-1 week', 'now'),
             'completed_at' => $this->faker->optional()->dateTimeBetween('-1 week', 'now'),

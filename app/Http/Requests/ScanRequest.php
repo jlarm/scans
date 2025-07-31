@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests;
 
 use App\Enums\ScanStatus;
-use App\Enums\ScheduleType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class ScanRequest extends FormRequest
+final class ScanRequest extends FormRequest
 {
     public function rules(): array
     {
@@ -24,37 +25,37 @@ class ScanRequest extends FormRequest
                 'nullable',
                 'email',
                 'max:255',
-                'required_if:send_notification,true'
+                'required_if:send_notification,true',
             ],
             'schedule_type' => [
                 'required',
                 'string',
-                Rule::in(['immediate', 'once', 'recurring'])
+                Rule::in(['immediate', 'once', 'recurring']),
             ],
             'scheduled_at' => [
                 'nullable',
                 'date',
                 'after:now',
-                'required_if:schedule_type,once'
+                'required_if:schedule_type,once',
             ],
             'cron_expression' => ['nullable', 'string', 'max:255'],
             'frequency' => [
                 'nullable',
                 'string',
                 Rule::in(['daily', 'weekly', 'monthly']),
-                'required_if:schedule_type,recurring'
+                'required_if:schedule_type,recurring',
             ],
             'day_of_week' => [
                 'nullable',
                 'integer',
                 'min:0',
                 'max:6',
-                'required_if:frequency,weekly'
+                'required_if:frequency,weekly',
             ],
             'schedule_time' => [
                 'nullable',
                 'date_format:H:i',
-                'required_if:schedule_type,once,recurring'
+                'required_if:schedule_type,once,recurring',
             ],
             'status' => ['nullable', Rule::enum(ScanStatus::class)],
             'risk_grade' => ['nullable', 'string', 'size:1', 'regex:/^[A-F]$/'],
