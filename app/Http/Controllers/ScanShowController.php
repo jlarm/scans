@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Scan;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -15,17 +14,17 @@ final class ScanShowController extends Controller
     {
         $scan->load([
             'company',
-            'results' => function ($query) {
+            'results' => function ($query): void {
                 $query->orderBy('target')->orderBy('check_type')->orderBy('check_name');
-            }
+            },
         ]);
 
         // Get analytics data for charts
         $analytics = $this->getAnalytics($scan);
-        
+
         // Get detailed results grouped by target and type
         $resultsByTarget = $this->getResultsByTarget($scan);
-        
+
         // Get vulnerability summary
         $vulnerabilities = $this->getVulnerabilities($scan);
 
@@ -40,46 +39,40 @@ final class ScanShowController extends Controller
     private function getAnalytics(Scan $scan): array
     {
         $results = $scan->results;
-        
+
         return [
             'overview' => [
                 'total_checks' => $results->count(),
                 'passed_checks' => $results->where('passed', true)->count(),
                 'failed_checks' => $results->where('passed', false)->count(),
                 'targets_scanned' => $results->unique('target')->count(),
-                'scan_duration' => $scan->started_at && $scan->completed_at ? 
+                'scan_duration' => $scan->started_at && $scan->completed_at ?
                     $scan->started_at->diffInSeconds($scan->completed_at) : null,
             ],
             'severity_breakdown' => [
                 'critical' => $results->where('severity', 'critical')->count(),
-                'high' => $results->filter(fn($result) => $result->severity === 'high' || $result->risk_level === 'high')->count(),
-                'medium' => $results->filter(fn($result) => $result->severity === 'medium' || $result->risk_level === 'medium')->count(),
-                'low' => $results->filter(fn($result) => $result->severity === 'low' || $result->risk_level === 'low')->count(),
-                'info' => $results->filter(fn($result) => is_null($result->severity) && is_null($result->risk_level) && $result->passed)->count(),
+                'high' => $results->filter(fn ($result): bool => $result->severity === 'high' || $result->risk_level === 'high')->count(),
+                'medium' => $results->filter(fn ($result): bool => $result->severity === 'medium' || $result->risk_level === 'medium')->count(),
+                'low' => $results->filter(fn ($result): bool => $result->severity === 'low' || $result->risk_level === 'low')->count(),
+                'info' => $results->filter(fn ($result): bool => is_null($result->severity) && is_null($result->risk_level) && $result->passed)->count(),
             ],
-            'check_types' => $results->groupBy('check_type')->map(function ($group, $type) {
-                return [
-                    'type' => $type,
-                    'total' => $group->count(),
-                    'passed' => $group->where('passed', true)->count(),
-                    'failed' => $group->where('passed', false)->count(),
-                    'high_risk' => $group->where(function ($result) {
-                        return in_array($result->severity, ['high', 'critical']) || 
-                               $result->risk_level === 'high' ||
-                               !empty($result->vulnerabilities);
-                    })->count(),
-                ];
-            })->values(),
-            'targets' => $results->groupBy('target')->map(function ($group, $target) {
-                return [
-                    'target' => $target,
-                    'target_type' => $group->first()->target_type,
-                    'total_checks' => $group->count(),
-                    'passed' => $group->where('passed', true)->count(),
-                    'failed' => $group->where('passed', false)->count(),
-                    'risk_score' => $this->calculateRiskScore($group),
-                ];
-            })->values(),
+            'check_types' => $results->groupBy('check_type')->map(fn ($group, $type): array => [
+                'type' => $type,
+                'total' => $group->count(),
+                'passed' => $group->where('passed', true)->count(),
+                'failed' => $group->where('passed', false)->count(),
+                'high_risk' => $group->where(fn ($result): bool => in_array($result->severity, ['high', 'critical']) ||
+                       $result->risk_level === 'high' ||
+                       ! empty($result->vulnerabilities))->count(),
+            ])->values(),
+            'targets' => $results->groupBy('target')->map(fn ($group, $target): array => [
+                'target' => $target,
+                'target_type' => $group->first()->target_type,
+                'total_checks' => $group->count(),
+                'passed' => $group->where('passed', true)->count(),
+                'failed' => $group->where('passed', false)->count(),
+                'risk_score' => $this->calculateRiskScore($group),
+            ])->values(),
         ];
     }
 
@@ -87,30 +80,24 @@ final class ScanShowController extends Controller
     {
         return $scan->results
             ->groupBy('target')
-            ->map(function ($results, $target) {
-                return [
-                    'target' => $target,
-                    'target_type' => $results->first()->target_type,
-                    'results' => $results->groupBy('check_type')->map(function ($typeResults, $checkType) {
-                        return [
-                            'check_type' => $checkType,
-                            'checks' => $typeResults->map(function ($result) {
-                                return [
-                                    'id' => $result->id,
-                                    'check_name' => $result->check_name,
-                                    'passed' => $result->passed,
-                                    'severity' => $result->severity ?? $result->risk_level,
-                                    'message' => $result->message,
-                                    'description' => $result->description,
-                                    'recommendations' => $result->recommendations,
-                                    'vulnerabilities' => $result->vulnerabilities,
-                                    'check_data' => $result->check_data,
-                                ];
-                            })->values(),
-                        ];
-                    })->values(),
-                ];
-            })
+            ->map(fn ($results, $target): array => [
+                'target' => $target,
+                'target_type' => $results->first()->target_type,
+                'results' => $results->groupBy('check_type')->map(fn ($typeResults, $checkType): array => [
+                    'check_type' => $checkType,
+                    'checks' => $typeResults->map(fn ($result): array => [
+                        'id' => $result->id,
+                        'check_name' => $result->check_name,
+                        'passed' => $result->passed,
+                        'severity' => $result->severity ?? $result->risk_level,
+                        'message' => $result->message,
+                        'description' => $result->description,
+                        'recommendations' => $result->recommendations,
+                        'vulnerabilities' => $result->vulnerabilities,
+                        'check_data' => $result->check_data,
+                    ])->values(),
+                ])->values(),
+            ])
             ->values()
             ->toArray();
     }
@@ -118,9 +105,9 @@ final class ScanShowController extends Controller
     private function getVulnerabilities(Scan $scan): array
     {
         $vulnerabilities = [];
-        
+
         foreach ($scan->results as $result) {
-            if (!empty($result->vulnerabilities)) {
+            if (! empty($result->vulnerabilities)) {
                 foreach ($result->vulnerabilities as $vuln) {
                     $vulnerabilities[] = [
                         'target' => $result->target,
@@ -137,46 +124,38 @@ final class ScanShowController extends Controller
                 }
             }
         }
-        
+
         // Sort by severity (critical first)
-        usort($vulnerabilities, function ($a, $b) {
+        usort($vulnerabilities, function (array $a, array $b): int {
             $severityOrder = ['critical' => 4, 'high' => 3, 'medium' => 2, 'low' => 1, 'unknown' => 0];
+
             return ($severityOrder[$b['severity']] ?? 0) - ($severityOrder[$a['severity']] ?? 0);
         });
-        
+
         return $vulnerabilities;
     }
 
     private function calculateRiskScore(mixed $results): int
     {
         $score = 0;
-        
+
         foreach ($results as $result) {
-            if (!$result->passed) {
-                switch ($result->severity ?? $result->risk_level) {
-                    case 'critical':
-                        $score += 10;
-                        break;
-                    case 'high':
-                        $score += 7;
-                        break;
-                    case 'medium':
-                        $score += 4;
-                        break;
-                    case 'low':
-                        $score += 1;
-                        break;
-                    default:
-                        $score += 2; // Default for failed checks
-                }
+            if (! $result->passed) {
+                match ($result->severity ?? $result->risk_level) {
+                    'critical' => $score += 10,
+                    'high' => $score += 7,
+                    'medium' => $score += 4,
+                    'low' => $score += 1,
+                    default => $score += 2,
+                };
             }
-            
+
             // Add extra points for vulnerabilities
-            if (!empty($result->vulnerabilities)) {
+            if (! empty($result->vulnerabilities)) {
                 $score += count($result->vulnerabilities) * 5;
             }
         }
-        
+
         return min(100, $score); // Cap at 100
     }
 }

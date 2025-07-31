@@ -20,12 +20,12 @@ final class ScanResultFactory extends Factory
     {
         $checkTypes = [
             'security_header',
-            'ssl_certificate', 
+            'ssl_certificate',
             'port_scan',
             'cors_policy',
             'service_detection',
             'additional_header',
-            'http_connection'
+            'http_connection',
         ];
 
         $severityLevels = ['low', 'medium', 'high', 'critical'];
@@ -38,8 +38,8 @@ final class ScanResultFactory extends Factory
             'uuid' => Str::uuid(),
             'scan_id' => Scan::factory(),
             'target' => fake()->randomElement([
-                fake()->url(), 
-                fake()->ipv4()
+                fake()->url(),
+                fake()->ipv4(),
             ]),
             'target_type' => fake()->randomElement(['url', 'ip']),
             'check_type' => $checkType,
@@ -47,25 +47,25 @@ final class ScanResultFactory extends Factory
             'passed' => $passed,
             'severity' => $passed ? null : fake()->randomElement($severityLevels),
             'risk_level' => fake()->optional(0.3)->randomElement($riskLevels),
-            'message' => $passed ? 
-                'Check passed successfully' : 
+            'message' => $passed ?
+                'Check passed successfully' :
                 fake()->sentence(6, true),
             'description' => fake()->optional(0.5)->sentence(10),
             'check_data' => $this->generateCheckData($checkType, $passed),
-            'recommendations' => $passed ? 
-                null : 
+            'recommendations' => $passed ?
+                null :
                 fake()->sentences(fake()->numberBetween(1, 3)),
             'vulnerabilities' => fake()->optional(0.1)->randomElements([
                 [
                     'cve' => 'CVE-2021-44228',
                     'severity' => 'critical',
-                    'description' => 'Remote code execution vulnerability'
+                    'description' => 'Remote code execution vulnerability',
                 ],
                 [
                     'cve' => 'CVE-2021-41773',
                     'severity' => 'high',
-                    'description' => 'Path traversal vulnerability'
-                ]
+                    'description' => 'Path traversal vulnerability',
+                ],
             ], fake()->numberBetween(0, 2)),
             'scanned_at' => fake()->dateTimeBetween('-1 week', 'now'),
         ];
@@ -73,7 +73,7 @@ final class ScanResultFactory extends Factory
 
     public function passed(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'passed' => true,
             'severity' => null,
             'message' => 'Check passed successfully',
@@ -84,7 +84,7 @@ final class ScanResultFactory extends Factory
 
     public function failed(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'passed' => false,
             'severity' => fake()->randomElement(['medium', 'high', 'critical']),
             'message' => fake()->sentence(6, true),
@@ -94,7 +94,7 @@ final class ScanResultFactory extends Factory
 
     public function highRisk(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'passed' => false,
             'severity' => fake()->randomElement(['high', 'critical']),
             'risk_level' => 'high',
@@ -102,41 +102,41 @@ final class ScanResultFactory extends Factory
                 [
                     'cve' => 'CVE-2021-44228',
                     'severity' => 'critical',
-                    'description' => 'Remote code execution vulnerability'
-                ]
+                    'description' => 'Remote code execution vulnerability',
+                ],
             ],
         ]);
     }
 
-    public function withVulnerabilities(array $vulnerabilities = null): static
+    public function withVulnerabilities(?array $vulnerabilities = null): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'passed' => false,
             'vulnerabilities' => $vulnerabilities ?? [
                 [
                     'cve' => 'CVE-2021-44228',
-                    'severity' => 'critical', 
-                    'description' => 'Log4j remote code execution'
-                ]
+                    'severity' => 'critical',
+                    'description' => 'Log4j remote code execution',
+                ],
             ],
         ]);
     }
 
     public function securityHeader(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'check_type' => 'security_header',
             'check_name' => fake()->randomElement([
                 'X-Frame-Options',
                 'X-Content-Type-Options',
-                'Strict-Transport-Security'
+                'Strict-Transport-Security',
             ]),
         ]);
     }
 
     public function portScan(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'check_type' => 'port_scan',
             'check_name' => fake()->randomElement(['HTTP', 'HTTPS', 'SSH', 'FTP']),
             'target_type' => 'ip',
@@ -149,20 +149,20 @@ final class ScanResultFactory extends Factory
         return match ($checkType) {
             'security_header' => fake()->randomElement([
                 'X-Frame-Options',
-                'X-Content-Type-Options', 
+                'X-Content-Type-Options',
                 'Strict-Transport-Security',
-                'Content-Security-Policy'
+                'Content-Security-Policy',
             ]),
             'ssl_certificate' => 'Certificate Validity',
             'port_scan' => fake()->randomElement(['HTTP', 'HTTPS', 'SSH', 'FTP', 'SMTP']),
             'cors_policy' => fake()->randomElement([
                 'Access-Control-Allow-Origin',
-                'Access-Control-Allow-Methods'
+                'Access-Control-Allow-Methods',
             ]),
             'service_detection' => fake()->randomElement(['SSH', 'HTTP', 'FTP']),
             'additional_header' => fake()->randomElement([
                 'X-Permitted-Cross-Domain-Policies',
-                'Permissions-Policy'
+                'Permissions-Policy',
             ]),
             default => null,
         };

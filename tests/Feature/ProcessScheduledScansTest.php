@@ -7,8 +7,6 @@ use App\Enums\ScanStatus;
 use App\Jobs\ProcessScheduledScans;
 use App\Models\Company;
 use App\Models\Scan;
-use App\Models\ScanResult;
-use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 
@@ -55,7 +53,7 @@ test('processes immediate scans that are due', function () {
     expect($scan->completed_at)->not()->toBeNull();
     expect($scan->summary)->not()->toBeNull();
     expect($scan->risk_grade)->not()->toBeNull();
-    
+
     // Check that scan results were stored
     expect($scan->results)->toHaveCount(1);
     $result = $scan->results->first();
@@ -104,7 +102,7 @@ test('processes recurring scans with valid cron expression', function () {
     // Create a scan that should run daily at the current time
     $currentTime = now();
     $cronExpression = sprintf('%d %d * * *', $currentTime->minute, $currentTime->hour);
-    
+
     $scan = Scan::factory()->create([
         'company_id' => $this->company->id,
         'schedule_type' => 'recurring',
@@ -228,7 +226,7 @@ test('processes scans with both urls and ip addresses', function () {
             'type' => 'url',
             'checks' => [['type' => 'test', 'passed' => true]],
         ]);
-    
+
     $scannerService->shouldReceive('scan')
         ->with('192.168.1.1', 'ip')
         ->once()
@@ -341,7 +339,7 @@ test('stores detailed scan results correctly', function () {
                         'cve' => 'CVE-2021-44228',
                         'severity' => 'critical',
                         'description' => 'Apache Log4j2 remote code execution',
-                    ]
+                    ],
                 ],
             ],
         ],
@@ -359,7 +357,7 @@ test('stores detailed scan results correctly', function () {
     $job->handle($scannerService);
 
     $scan->refresh();
-    
+
     // Verify scan completion
     expect($scan->status)->toBe(ScanStatus::COMPLETED->value);
     expect($scan->results)->toHaveCount(3);

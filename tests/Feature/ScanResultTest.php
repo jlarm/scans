@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Models\Company; 
+use App\Models\Company;
 use App\Models\Scan;
 use App\Models\ScanResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -40,18 +40,18 @@ test('scan has many results', function () {
     $results = ScanResult::factory()->count(3)->create(['scan_id' => $this->scan->id]);
 
     $this->scan->refresh();
-    
+
     expect($this->scan->results)->toHaveCount(3);
     expect($this->scan->results->first())->toBeInstanceOf(ScanResult::class);
 });
 
 test('can filter scan results by severity', function () {
     ScanResult::factory()->create(['scan_id' => $this->scan->id, 'severity' => 'high']);
-    ScanResult::factory()->create(['scan_id' => $this->scan->id, 'severity' => 'low']); 
+    ScanResult::factory()->create(['scan_id' => $this->scan->id, 'severity' => 'low']);
     ScanResult::factory()->create(['scan_id' => $this->scan->id, 'severity' => 'high']);
 
     $highSeverityResults = ScanResult::bySeverity('high')->get();
-    
+
     expect($highSeverityResults)->toHaveCount(2);
     expect($highSeverityResults->first()->severity)->toBe('high');
 });
@@ -62,7 +62,7 @@ test('can filter scan results by check type', function () {
     ScanResult::factory()->create(['scan_id' => $this->scan->id, 'check_type' => 'security_header']);
 
     $headerResults = ScanResult::byCheckType('security_header')->get();
-    
+
     expect($headerResults)->toHaveCount(2);
     expect($headerResults->first()->check_type)->toBe('security_header');
 });
@@ -73,7 +73,7 @@ test('can filter failed scan results', function () {
     ScanResult::factory()->create(['scan_id' => $this->scan->id, 'passed' => false]);
 
     $failedResults = ScanResult::failed()->get();
-    
+
     expect($failedResults)->toHaveCount(2);
     expect($failedResults->first()->passed)->toBeFalse();
 });
@@ -84,7 +84,7 @@ test('can filter passed scan results', function () {
     ScanResult::factory()->create(['scan_id' => $this->scan->id, 'passed' => true]);
 
     $passedResults = ScanResult::passed()->get();
-    
+
     expect($passedResults)->toHaveCount(2);
     expect($passedResults->first()->passed)->toBeTrue();
 });
@@ -96,7 +96,7 @@ test('can filter high risk results', function () {
     ScanResult::factory()->create(['scan_id' => $this->scan->id, 'risk_level' => 'high']);
 
     $highRiskResults = ScanResult::highRisk()->get();
-    
+
     expect($highRiskResults)->toHaveCount(3);
 });
 
@@ -107,7 +107,7 @@ test('can filter results with vulnerabilities', function () {
     ScanResult::factory()->withVulnerabilities()->create(['scan_id' => $this->scan->id]);
 
     $vulnResults = ScanResult::withVulnerabilities()->get();
-    
+
     expect($vulnResults)->toHaveCount(2);
 });
 
@@ -122,12 +122,12 @@ test('hasVulnerabilities method works correctly', function () {
 test('getVulnerabilityCount method works correctly', function () {
     $vulnerabilities = [
         ['cve' => 'CVE-2021-44228', 'severity' => 'critical'],
-        ['cve' => 'CVE-2021-41773', 'severity' => 'high']
+        ['cve' => 'CVE-2021-41773', 'severity' => 'high'],
     ];
-    
+
     $withVuln = ScanResult::factory()->create([
         'scan_id' => $this->scan->id,
-        'vulnerabilities' => $vulnerabilities
+        'vulnerabilities' => $vulnerabilities,
     ]);
     $withoutVuln = ScanResult::factory()->create(['scan_id' => $this->scan->id, 'vulnerabilities' => null]);
 

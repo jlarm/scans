@@ -17,19 +17,19 @@ final class ScanIndexController extends Controller
         $scans = Scan::with(['company', 'results'])
             ->withCount([
                 'results',
-                'results as passed_checks_count' => function ($query) {
+                'results as passed_checks_count' => function ($query): void {
                     $query->where('passed', true);
                 },
-                'results as failed_checks_count' => function ($query) {
+                'results as failed_checks_count' => function ($query): void {
                     $query->where('passed', false);
                 },
-                'results as high_risk_count' => function ($query) {
-                    $query->where(function ($q) {
+                'results as high_risk_count' => function ($query): void {
+                    $query->where(function ($q): void {
                         $q->whereIn('severity', ['high', 'critical'])
-                          ->orWhere('risk_level', 'high')
-                          ->orWhereNotNull('vulnerabilities');
+                            ->orWhere('risk_level', 'high')
+                            ->orWhereNotNull('vulnerabilities');
                     });
-                }
+                },
             ])
             ->orderBy('created_at', 'desc')
             ->paginate(15);
@@ -53,8 +53,8 @@ final class ScanIndexController extends Controller
         // Calculate progress based on results created vs expected
         $expectedChecks = $this->calculateExpectedChecks($scan);
         $completedChecks = $scan->results()->count();
-        
-        $progress = $expectedChecks > 0 ? 
+
+        $progress = $expectedChecks > 0 ?
             min(100, round(($completedChecks / $expectedChecks) * 100)) : 0;
 
         return response()->json([
@@ -80,23 +80,23 @@ final class ScanIndexController extends Controller
     private function calculateExpectedChecks(Scan $scan): int
     {
         $expectedChecks = 0;
-        
+
         // Each URL gets approximately 18 checks (based on ScannerService)
         // - 6 security headers
-        // - 1 SSL certificate  
+        // - 1 SSL certificate
         // - 6 additional headers
         // - 5 CORS policy checks
         if ($scan->urls) {
             $expectedChecks += count(array_filter($scan->urls)) * 18;
         }
-        
+
         // Each IP gets approximately 20 checks
         // - 15 port scans (common ports)
         // - 5 service detection checks
         if ($scan->ip_addresses) {
             $expectedChecks += count(array_filter($scan->ip_addresses)) * 20;
         }
-        
+
         return $expectedChecks;
     }
 
@@ -106,7 +106,7 @@ final class ScanIndexController extends Controller
         $latestResult = $scan->results()
             ->orderBy('created_at', 'desc')
             ->first();
-            
+
         return $latestResult ? $latestResult->target : null;
     }
 }

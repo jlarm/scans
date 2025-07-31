@@ -35,18 +35,6 @@ final class ScanResult extends Model
         return $this->belongsTo(Scan::class);
     }
 
-    protected function casts(): array
-    {
-        return [
-            'uuid' => 'string',
-            'passed' => 'bool',
-            'check_data' => 'array',
-            'recommendations' => 'array',
-            'vulnerabilities' => 'array',
-            'scanned_at' => 'datetime',
-        ];
-    }
-
     // Scope for filtering by severity
     public function scopeBySeverity($query, string $severity)
     {
@@ -100,8 +88,8 @@ final class ScanResult extends Model
     // Helper method to check if result is high risk
     public function isHighRisk(): bool
     {
-        return in_array($this->severity, ['high', 'critical']) || 
-               $this->risk_level === 'high' || 
+        return in_array($this->severity, ['high', 'critical']) ||
+               $this->risk_level === 'high' ||
                $this->hasVulnerabilities();
     }
 
@@ -111,15 +99,27 @@ final class ScanResult extends Model
         if ($this->severity) {
             return $this->severity;
         }
-        
+
         if ($this->risk_level) {
             return $this->risk_level;
         }
-        
+
         if ($this->hasVulnerabilities()) {
             return 'high';
         }
-        
+
         return $this->passed ? 'low' : 'medium';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'uuid' => 'string',
+            'passed' => 'bool',
+            'check_data' => 'array',
+            'recommendations' => 'array',
+            'vulnerabilities' => 'array',
+            'scanned_at' => 'datetime',
+        ];
     }
 }

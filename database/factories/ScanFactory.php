@@ -44,29 +44,29 @@ final class ScanFactory extends Factory
 
     public function withUrls(array $urls = ['https://example.com']): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'urls' => $urls,
         ]);
     }
 
     public function withIpAddresses(array $ips = ['192.168.1.1']): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'ip_addresses' => $ips,
         ]);
     }
 
-    public function once(string $scheduledAt = null): static
+    public function once(?string $scheduledAt = null): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'schedule_type' => 'once',
-            'scheduled_at' => $scheduledAt ? $scheduledAt : now()->addHour(),
+            'scheduled_at' => $scheduledAt !== null && $scheduledAt !== '' && $scheduledAt !== '0' ? $scheduledAt : now()->addHour(),
         ]);
     }
 
     public function recurring(string $cronExpression = '0 9 * * *'): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'schedule_type' => 'recurring',
             'cron_expression' => $cronExpression,
             'frequency' => 'daily',
@@ -76,7 +76,7 @@ final class ScanFactory extends Factory
 
     public function completed(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'status' => ScanStatus::COMPLETED->value,
             'started_at' => now()->subHour(),
             'completed_at' => now()->subMinutes(30),
@@ -92,7 +92,7 @@ final class ScanFactory extends Factory
 
     public function failed(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'status' => ScanStatus::FAILED->value,
             'started_at' => now()->subHour(),
             'completed_at' => now()->subMinutes(30),
@@ -105,7 +105,7 @@ final class ScanFactory extends Factory
 
     public function running(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'status' => ScanStatus::RUNNING->value,
             'started_at' => now()->subMinutes(10),
         ]);
@@ -113,7 +113,7 @@ final class ScanFactory extends Factory
 
     public function withNotification(string $email = 'test@example.com'): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'send_notification' => true,
             'notification_email' => $email,
         ]);

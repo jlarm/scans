@@ -20,7 +20,7 @@ final class ProcessScheduledScansCommand extends Command
         ProcessScheduledScans::dispatch();
 
         $this->comment('Scheduled scans job has been dispatched.');
-        
+
         return self::SUCCESS;
     }
 }

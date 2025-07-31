@@ -49,12 +49,12 @@ final class ProcessScheduledScans implements ShouldQueue
         $now = now();
 
         // Get immediate and one-time scans
-        $scansToRun = Scan::where(function ($query) use ($now) {
+        $scansToRun = Scan::where(function ($query) use ($now): void {
             // Immediate scans that are still pending
             $query->where('schedule_type', 'immediate')
                 ->where('status', ScanStatus::PENDING->value)
                 ->where('scheduled_at', '<=', $now);
-        })->orWhere(function ($query) use ($now) {
+        })->orWhere(function ($query) use ($now): void {
             // One-time scans scheduled for now or past
             $query->where('schedule_type', 'once')
                 ->where('status', ScanStatus::PENDING->value)
@@ -66,9 +66,7 @@ final class ProcessScheduledScans implements ShouldQueue
             ->whereNotNull('cron_expression')
             ->with('company')
             ->get()
-            ->filter(function ($scan) use ($now) {
-                return $this->shouldRunRecurringScan($scan, $now);
-            });
+            ->filter(fn ($scan): bool => $this->shouldRunRecurringScan($scan, $now));
 
         return $scansToRun->merge($recurringScans);
     }
@@ -81,11 +79,11 @@ final class ProcessScheduledScans implements ShouldQueue
 
         try {
             $cron = new CronExpression($scan->cron_expression);
-            
+
             // Check if the scan should run now
             $lastRun = $scan->completed_at ?? $scan->created_at;
             $nextRun = $cron->getNextRunDate($lastRun);
-            
+
             return $nextRun <= $now;
         } catch (Exception $e) {
             Log::error('Invalid cron expression for scan {id}: {expression}', [
@@ -93,6 +91,7 @@ final class ProcessScheduledScans implements ShouldQueue
                 'expression' => $scan->cron_expression,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -116,7 +115,7 @@ final class ProcessScheduledScans implements ShouldQueue
             // Process URLs
             if ($scan->urls) {
                 foreach ($scan->urls as $url) {
-                    if (! empty(trim($url))) {
+                    if (! in_array(trim($url), ['', '0'], true)) {
                         Log::info('Scanning URL: {url}', ['url' => $url]);
                         $scanResult = $scannerService->scan($url, 'url');
                         $results[] = $scanResult;
@@ -128,7 +127,7 @@ final class ProcessScheduledScans implements ShouldQueue
             // Process IP addresses
             if ($scan->ip_addresses) {
                 foreach ($scan->ip_addresses as $ip) {
-                    if (! empty(trim($ip))) {
+                    if (! in_array(trim($ip), ['', '0'], true)) {
                         Log::info('Scanning IP: {ip}', ['ip' => $ip]);
                         $scanResult = $scannerService->scan($ip, 'ip');
                         $results[] = $scanResult;
@@ -269,20 +268,23 @@ final class ProcessScheduledScans implements ShouldQueue
         }
 
         $failureRate = $failedChecks / $totalChecks;
-        $highRiskRate = $highRiskCount / $totalChecks;
 
         // Grade based on failure rate and risk levels
         if ($highRiskCount > 0 || $failureRate > 0.5) {
             return 'F';
-        } elseif ($failureRate > 0.3 || $mediumRiskCount > 5) {
-            return 'D';
-        } elseif ($failureRate > 0.2 || $mediumRiskCount > 3) {
-            return 'C';
-        } elseif ($failureRate > 0.1 || $mediumRiskCount > 1) {
-            return 'B';
-        } else {
-            return 'A';
         }
+        if ($failureRate > 0.3 || $mediumRiskCount > 5) {
+            return 'D';
+        }
+        if ($failureRate > 0.2 || $mediumRiskCount > 3) {
+            return 'C';
+        }
+        if ($failureRate > 0.1 || $mediumRiskCount > 1) {
+            return 'B';
+        }
+
+        return 'A';
+
     }
 
     private function sendNotification(Scan $scan, array $summary, string $riskGrade): void
@@ -334,8 +336,8 @@ final class ProcessScheduledScans implements ShouldQueue
     {
         $target = $scanResult['target'] ?? '';
         $targetType = $scanResult['type'] ?? 'unknown';
-        $scannedAt = isset($scanResult['timestamp']) ? 
-            CarbonImmutable::parse($scanResult['timestamp']) : 
+        $scannedAt = isset($scanResult['timestamp']) ?
+            CarbonImmutable::parse($scanResult['timestamp']) :
             now();
 
         $checks = $scanResult['checks'] ?? [];
@@ -346,10 +348,10 @@ final class ProcessScheduledScans implements ShouldQueue
     }
 
     private function createScanResultRecord(
-        Scan $scan, 
-        string $target, 
-        string $targetType, 
-        array $check, 
+        Scan $scan,
+        string $target,
+        string $targetType,
+        array $check,
         CarbonImmutable $scannedAt
     ): void {
         // Extract common fields from check data
