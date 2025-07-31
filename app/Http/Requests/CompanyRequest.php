@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class CompanyRequest extends FormRequest
+final class CompanyRequest extends FormRequest
 {
-    public function rules()
+    public function rules(): array
     {
         return [
             'uuid' => ['required'],
@@ -14,7 +16,7 @@ class CompanyRequest extends FormRequest
         ];
     }
 
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
