@@ -13,13 +13,14 @@ final class ScanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => ['required', 'exists:companies,id'],
+            'company_id' => ['nullable', 'exists:companies,id', 'required_without:company_name'],
+            'company_name' => ['nullable', 'string', 'max:255', 'required_without:company_id'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'urls' => ['nullable', 'array'],
-            'urls.*' => ['required_with:urls', 'url', 'max:2048'],
+            'urls.*' => ['nullable', 'url', 'max:2048'],
             'ip_addresses' => ['nullable', 'array'],
-            'ip_addresses.*' => ['required_with:ip_addresses', 'ip', 'max:45'],
+            'ip_addresses.*' => ['nullable', 'ip', 'max:45'],
             'send_notification' => ['boolean'],
             'notification_email' => [
                 'nullable',
@@ -32,11 +33,15 @@ final class ScanRequest extends FormRequest
                 'string',
                 Rule::in(['immediate', 'once', 'recurring']),
             ],
+            'scheduled_date' => [
+                'nullable',
+                'date',
+                'after:today'
+            ],
             'scheduled_at' => [
                 'nullable',
                 'date',
-                'after:now',
-                'required_if:schedule_type,once',
+                'after:now'
             ],
             'cron_expression' => ['nullable', 'string', 'max:255'],
             'frequency' => [

@@ -8,12 +8,13 @@ import {
 import { ref } from 'vue';
 import { CalendarIcon, Plus, X } from 'lucide-vue-next'
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import InputError from '@/components/InputError.vue';
 import { Calendar } from '@/components/ui/calendar'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
@@ -31,11 +32,15 @@ import {
 import { cn } from '@/lib/utils';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 
-const sendNotification = ref(false);
-const selectedSchedule = ref('now');
+interface Props {
+    companies: Array<{id: number, name: string}>;
+}
+
+const props = defineProps<Props>();
+
+const selectedSchedule = ref('immediate');
 const frequency = ref('weekly');
 const dayOfWeek = ref('1');
-const scheduleTime = ref('09:00');
 const urls = ref(['']);
 const ipAddresses = ref(['']);
 const df = new DateFormatter('en-US', {
@@ -43,24 +48,88 @@ const df = new DateFormatter('en-US', {
 });
 const value = ref<DateValue>();
 
+const form = useForm({
+    company_id: '',
+    company_name: '',
+    name: '',
+    description: '',
+    urls: [''],
+    ip_addresses: [''],
+    send_notification: false,
+    notification_email: '',
+    schedule_type: 'immediate',
+    scheduled_date: '',
+    schedule_time: '09:00',
+    frequency: 'weekly',
+    day_of_week: 1,
+});
+
+const showCreateCompany = ref(false);
+
 function addUrl() {
-    urls.value.push('');
+    form.urls.push('');
 }
 
 function removeUrl(index: number) {
-    if (urls.value.length > 1) {
-        urls.value.splice(index, 1);
+    if (form.urls.length > 1) {
+        form.urls.splice(index, 1);
     }
 }
 
 function addIpAddress() {
-    ipAddresses.value.push('');
+    form.ip_addresses.push('');
 }
 
 function removeIpAddress(index: number) {
-    if (ipAddresses.value.length > 1) {
-        ipAddresses.value.splice(index, 1);
+    if (form.ip_addresses.length > 1) {
+        form.ip_addresses.splice(index, 1);
     }
+}
+
+function updateScheduleType(type: string) {
+    form.schedule_type = type;
+    selectedSchedule.value = type;
+}
+
+function updateFrequency(freq: string) {
+    form.frequency = freq;
+    frequency.value = freq;
+}
+
+function updateDayOfWeek(day: string) {
+    form.day_of_week = parseInt(day);
+    dayOfWeek.value = day;
+}
+
+function formatDateForSubmission() {
+    if (value.value && selectedSchedule.value === 'once') {
+        // Convert DateValue to YYYY-MM-DD format
+        const date = value.value.toDate(getLocalTimeZone());
+        form.scheduled_date = date.toISOString().split('T')[0];
+    }
+}
+
+function toggleCreateCompany() {
+    showCreateCompany.value = !showCreateCompany.value;
+    if (showCreateCompany.value) {
+        form.company_id = '';
+    } else {
+        form.company_name = '';
+    }
+}
+
+function submitForm() {
+    // Sync reactive values with form
+    formatDateForSubmission();
+    
+    form.post(route('scans.store'), {
+        onSuccess: () => {
+            // Form submitted successfully
+        },
+        onError: (errors) => {
+            console.error('Form errors:', errors);
+        }
+    });
 }
 
 </script>
@@ -69,22 +138,60 @@ function removeIpAddress(index: number) {
     <Head title="Create Scan" />
     <AppLayout>
         <div class="flex justify-center px-6 mt-6">
-            <form class="space-y-6 w-full max-w-2xl">
+            <form @submit.prevent="submitForm" class="space-y-6 w-full max-w-2xl">
                 <HeadingSmall title="Create New Scan" description="Set up a security scan for your URLs and IP addresses" />
                 <div class="space-y-2">
-                    <Label for="companyName">Company Name</Label>
-                    <Input id="companyName" />
+                    <div class="flex items-center justify-between">
+                        <Label for="company">Company</Label>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            @click="toggleCreateCompany"
+                            class="text-sm"
+                        >
+                            {{ showCreateCompany ? 'Select existing' : 'Create new' }}
+                        </Button>
+                    </div>
+                    
+                    <div v-if="!showCreateCompany">
+                        <Select v-model="form.company_id">
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a company" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem v-for="company in companies" :key="company.id" :value="company.id.toString()">
+                                    {{ company.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    
+                    <div v-else>
+                        <Input 
+                            id="company_name"
+                            v-model="form.company_name" 
+                            placeholder="Enter new company name"
+                        />
+                    </div>
+                    <InputError :message="form.errors.company_id || form.errors.company_name" />
                 </div>
                 <div class="space-y-2">
-                    <Label for="scanName    ">Scan Name</Label>
-                    <Input id="scanName " />
+                    <Label for="scanName">Scan Name</Label>
+                    <Input id="scanName" v-model="form.name" />
+                    <InputError :message="form.errors.name" />
+                </div>
+                <div class="space-y-2">
+                    <Label for="description">Description</Label>
+                    <Textarea id="description" v-model="form.description" />
+                    <InputError :message="form.errors.description" />
                 </div>
                 <div class="space-y-2">
                     <Label>URLs to Scan</Label>
-                    <div v-for="(url, index) in urls" :key="index" class="flex gap-2 items-end">
+                    <div v-for="(url, index) in form.urls" :key="index" class="flex gap-2 items-end">
                         <div class="flex-1">
                             <Input
-                                v-model="urls[index]"
+                                v-model="form.urls[index]"
                                 type="url"
                                 placeholder="https://example.com"
                             />
@@ -94,7 +201,7 @@ function removeIpAddress(index: number) {
                             variant="outline"
                             size="sm"
                             @click="removeUrl(index)"
-                            :disabled="urls.length === 1"
+                            :disabled="form.urls.length === 1"
                         >
                             <X class="h-4 w-4" />
                         </Button>
@@ -109,13 +216,14 @@ function removeIpAddress(index: number) {
                         <Plus class="h-4 w-4 mr-2" />
                         Add URL
                     </Button>
+                    <InputError :message="form.errors.urls || form.errors['urls.0'] || form.errors['urls.1']" />
                 </div>
                 <div class="space-y-2">
                     <Label>IP Addresses to Scan</Label>
-                    <div v-for="(ip, index) in ipAddresses" :key="index" class="flex gap-2 items-end">
+                    <div v-for="(ip, index) in form.ip_addresses" :key="index" class="flex gap-2 items-end">
                         <div class="flex-1">
                             <Input
-                                v-model="ipAddresses[index]"
+                                v-model="form.ip_addresses[index]"
                                 placeholder="192.168.1.1"
                                 pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
                             />
@@ -125,7 +233,7 @@ function removeIpAddress(index: number) {
                             variant="outline"
                             size="sm"
                             @click="removeIpAddress(index)"
-                            :disabled="ipAddresses.length === 1"
+                            :disabled="form.ip_addresses.length === 1"
                         >
                             <X class="h-4 w-4" />
                         </Button>
@@ -140,24 +248,26 @@ function removeIpAddress(index: number) {
                         <Plus class="h-4 w-4 mr-2" />
                         Add IP Address
                     </Button>
+                    <InputError :message="form.errors.ip_addresses || form.errors['ip_addresses.0'] || form.errors['ip_addresses.1']" />
                 </div>
                 <div class="flex items-center space-x-2">
                     <Checkbox
                         id="send_notification"
-                        v-model="sendNotification"
+                        v-model="form.send_notification"
                     />
                     <Label for="send_notification">Notify when complete</Label>
                 </div>
                 <!-- Show email field only when checkbox is checked -->
-                <div class="space-y-2" v-if="sendNotification">
+                <div class="space-y-2" v-if="form.send_notification">
                     <Label for="notification_email">Email Address</Label>
-                    <Input id="notification_email" type="email" />
+                    <Input id="notification_email" type="email" v-model="form.notification_email" />
+                    <InputError :message="form.errors.notification_email" />
                 </div>
                 <div class="space-y-2">
                     <Label>Schedule</Label>
-                    <RadioGroup v-model="selectedSchedule">
+                    <RadioGroup v-model="selectedSchedule" @update:model-value="updateScheduleType">
                         <div class="flex items-center space-x-2">
-                            <RadioGroupItem id="now" value="now" />
+                            <RadioGroupItem id="now" value="immediate" />
                             <Label for="now">Now</Label>
                         </div>
                         <div class="flex items-center space-x-2">
@@ -191,7 +301,7 @@ function removeIpAddress(index: number) {
                                     <Input 
                                         id="onceTime"
                                         type="time" 
-                                        v-model="scheduleTime" 
+                                        v-model="form.schedule_time" 
                                         class="w-full"
                                     />
                                 </div>
@@ -205,7 +315,7 @@ function removeIpAddress(index: number) {
                             <div class="grid grid-cols-3 gap-2">
                                 <div class="space-y-2">
                                     <Label>Every</Label>
-                                    <Select v-model="frequency">
+                                    <Select v-model="form.frequency" @update:model-value="updateFrequency">
                                         <SelectTrigger class="w-full">
                                             <SelectValue placeholder="Select" />
                                         </SelectTrigger>
@@ -216,9 +326,9 @@ function removeIpAddress(index: number) {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div class="space-y-2" v-if="frequency === 'weekly'">
+                                <div class="space-y-2" v-if="form.frequency === 'weekly'">
                                     <Label>On</Label>
-                                    <Select v-model="dayOfWeek">
+                                    <Select :model-value="form.day_of_week.toString()" @update:model-value="updateDayOfWeek">
                                         <SelectTrigger class="w-full">
                                             <SelectValue placeholder="Day" />
                                         </SelectTrigger>
@@ -238,18 +348,21 @@ function removeIpAddress(index: number) {
                                     <Input 
                                         id="recurringTime"
                                         type="time" 
-                                        v-model="scheduleTime"
+                                        v-model="form.schedule_time"
                                         class="w-full"
                                     />
                                 </div>
                             </div>
                         </div>
                     </RadioGroup>
+                    <InputError :message="form.errors.schedule_type || form.errors.scheduled_at || form.errors.frequency || form.errors.day_of_week || form.errors.schedule_time" />
                 </div>
                 <div>
 
                 </div>
-                <Button>Submit</Button>
+                <Button type="submit" :disabled="form.processing">
+                    {{ form.processing ? 'Creating...' : 'Create Scan' }}
+                </Button>
             </form>
         </div>
     </AppLayout>

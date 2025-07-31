@@ -18,5 +18,9 @@ Route::get('scans/create', [ScanController::class, 'create'])
     ->middleware(['auth', 'verified'])
     ->name('scans.create');
 
+Route::post('scans', [ScanController::class, 'store'])
+    ->middleware(['auth', 'verified'])
+    ->name('scans.store');
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
