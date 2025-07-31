@@ -36,12 +36,12 @@ final class ScanRequest extends FormRequest
             'scheduled_date' => [
                 'nullable',
                 'date',
-                'after:today'
+                'after:today',
             ],
             'scheduled_at' => [
                 'nullable',
                 'date',
-                'after:now'
+                'after:now',
             ],
             'cron_expression' => ['nullable', 'string', 'max:255'],
             'frequency' => [

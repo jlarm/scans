@@ -1,13 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
-class ScannerService
+final readonly class ScannerService
 {
     private Client $client;
+
     public function __construct()
     {
         $this->client = new Client([
@@ -29,13 +32,13 @@ class ScannerService
             $results['checks'] = array_merge(
                 $this->checkHttpSecurity($target),
                 $this->checkSslCertificate($target),
-                $this->checkHeaders($target),
-                $this->checkCors($target)
+                $this->checkHeaders(),
+                $this->checkCors()
             );
         } else {
             $results['checks'] = array_merge(
-                $this->checkOpenPorts($target),
-                $this->checkServices($target)
+                $this->checkOpenPorts(),
+                $this->checkServices()
             );
         }
 
@@ -76,6 +79,7 @@ class ScannerService
                 'passed' => false,
             ];
         }
+
         return $checks;
     }
 
@@ -83,25 +87,25 @@ class ScannerService
     {
         $checks = [];
 
-        if (!str_starts_with($url, 'https://')) {
+        if (! str_starts_with($url, 'https://')) {
             $checks[] = [
                 'type' => 'ssl',
                 'name' => 'HTTPS',
                 'passed' => false,
-                'message' => 'Site is not using HTTPS'
+                'message' => 'Site is not using HTTPS',
             ];
         }
 
         $context = stream_context_create([
-           'ssl' => [
-               'capture_peer_cert' => true,
-               'verify_peer' => false,
-               'verify_peer_name' => false,
-           ] ,
+            'ssl' => [
+                'capture_peer_cert' => true,
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
         ]);
 
         $stream = @stream_socket_client(
-            "ssl://" . parse_url($url, PHP_URL_HOST) . ":443",
+            'ssl://'.parse_url($url, PHP_URL_HOST).':443',
             $errno,
             $errstr,
             30,
@@ -125,28 +129,27 @@ class ScannerService
         return $checks;
     }
 
-    private function checkHeaders(string $url): array
+    private function checkHeaders(): array
     {
         // Implementation for checking additional headers
         return [];
     }
 
-    private function checkCors(string $url): array
+    private function checkCors(): array
     {
         // Implementation for CORS checks
         return [];
     }
 
-    private function checkOpenPorts(string $ip): array
+    private function checkOpenPorts(): array
     {
         // Implementation for port scanning
         return [];
     }
 
-    private function checkServices(string $ip): array
+    private function checkServices(): array
     {
         // Implementation for service detection
         return [];
     }
-
 }
