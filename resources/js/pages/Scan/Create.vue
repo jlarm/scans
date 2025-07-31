@@ -36,13 +36,11 @@ interface Props {
     companies: Array<{id: number, name: string}>;
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 
 const selectedSchedule = ref('immediate');
 const frequency = ref('weekly');
 const dayOfWeek = ref('1');
-const urls = ref(['']);
-const ipAddresses = ref(['']);
 const df = new DateFormatter('en-US', {
     dateStyle: 'long',
 });
