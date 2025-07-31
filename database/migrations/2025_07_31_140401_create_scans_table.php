@@ -13,12 +13,16 @@ return new class extends Migration {
             $table->foreignId('company_id')->constrained('companies');
             $table->string('name');
             $table->text('description')->nullable();
-            $table->string('agent')->nullable();
+            $table->json('urls')->nullable();
+            $table->json('ip_addresses')->nullable();
             $table->boolean('send_notification')->default(false);
             $table->string('notification_email')->nullable();
-            $table->string('schedule_type')->nullable();
+            $table->string('schedule_type')->default('immediate');
             $table->timestamp('scheduled_at')->nullable();
             $table->string('cron_expression')->nullable();
+            $table->string('frequency')->nullable(); // daily, weekly, monthly
+            $table->tinyInteger('day_of_week')->nullable(); // 0=Sunday, 1=Monday, etc.
+            $table->time('schedule_time')->nullable();
             $table->string('status')->default('pending');
             $table->char('risk_grade', 1)->nullable();
             $table->json('summary')->nullable();
