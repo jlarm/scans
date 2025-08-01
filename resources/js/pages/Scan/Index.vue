@@ -358,7 +358,9 @@ onUnmounted(() => {
                                         <Link :href="route('scans.show', scan.id)">
                                             <Button variant="outline" size="sm">View</Button>
                                         </Link>
-                                        <Button v-if="scan.status === 'completed'" variant="outline" size="sm">Report</Button>
+                                        <a v-if="scan.status === 'completed'" :href="route('scans.report.pdf', scan.id)" target="_blank">
+                                            <Button variant="outline" size="sm">Report</Button>
+                                        </a>
                                     </div>
                                 </TableCell>
                             </TableRow>

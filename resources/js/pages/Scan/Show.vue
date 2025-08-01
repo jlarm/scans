@@ -25,17 +25,16 @@ import CollapsibleTrigger from '@/components/ui/collapsible-trigger.vue';
 import { 
     ArrowLeft, 
     Shield, 
-    AlertTriangle, 
     CheckCircle, 
     XCircle, 
-    Clock,
     Target,
     Bug,
     FileText,
     BarChart3,
     ChevronDown,
     ChevronRight,
-    ExternalLink
+    ExternalLink,
+    Download
 } from 'lucide-vue-next';
 import { Doughnut, Bar } from 'vue-chartjs';
 import {
@@ -364,6 +363,12 @@ const targetsChartOptions = {
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
+                    <a v-if="scan.status === 'completed'" :href="route('scans.report.pdf', scan.id)" target="_blank">
+                        <Button variant="outline" size="sm">
+                            <Download class="h-4 w-4 mr-2" />
+                            Download PDF
+                        </Button>
+                    </a>
                     <Badge :variant="getStatusBadgeVariant(scan.status)">
                         {{ scan.status.charAt(0).toUpperCase() + scan.status.slice(1) }}
                     </Badge>
